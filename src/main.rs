@@ -5,8 +5,15 @@ use image::{RgbImage, ImageBuffer, Rgb};
 use std::fmt::Error;
 use num_complex::Complex;
 use indicatif::ProgressBar;
+use rayon::prelude::*;
 
 const THRESHHOLD: f64 = 200_i32.pow(2) as f64;
+
+struct PixelInfo {
+    x: u32,
+    y: u32,
+    color: Rgb<u8>,
+}
 
 fn calculate_color(number: Complex<f64>, iterations: u32) -> Result<Rgb<u8>, Error> {
     let mut z: Complex<f64> = Complex::new(0.0, 0.0);
@@ -67,8 +74,12 @@ fn generate_mandelbrot(width: u32,
 
     let bar = ProgressBar::new(width as u64);
 
-    for x in 0..width {
+    let mut all_pixels: Vec<Vec<PixelInfo>> = vec![];
+
+    (0..width).into_par_iter().map(|x| {
         bar.inc(1);
+        let mut row: Vec<PixelInfo> = vec![];
+
         for y in 0..height {
             let x_offset: f64 = (x as f64 / width as f64) * section_width;
             let y_offset: f64 = (y as f64 / width as f64) * section_height;
@@ -76,9 +87,22 @@ fn generate_mandelbrot(width: u32,
             let color = calculate_color(
                 Complex::new(upper_left.re + x_offset, upper_left.im + y_offset),
                 iterations).unwrap();
-            out_image.put_pixel(x, y, color);
+            row.push(PixelInfo {
+                x,
+                y,
+                color,
+            });
+        }
+        row
+    }).collect_into_vec(&mut all_pixels);
+
+    for vector in all_pixels {
+        for pixel in vector {
+            out_image.put_pixel(pixel.x, pixel.y, pixel.color);
         }
     }
+
+
     bar.finish_with_message("Rendered frame.");
     Ok(out_image)
 }
@@ -100,16 +124,17 @@ fn render_around_point(image_size: u32,
                         lower_right)
 }
 
-fn render_sequence(num_frames: u32,
+fn render_sequence(end_frame: u32,
+                   start_frame: u32,
                    image_size: u32,
                    iterations: u32,
                    initial_size: f64,
                    zoom_point: Complex<f64>,
                    scale_factor: f32,
                    path: String) {
-    let mut scale = initial_size;
+    let mut scale = initial_size * (1.0 - scale_factor).powi(start_frame as i32) as f64;
 
-    for frame in 0..num_frames {
+    for frame in start_frame..end_frame {
         let fractal: RgbImage = render_around_point(image_size,
                                                     iterations,
                                                     scale,
@@ -125,12 +150,13 @@ fn render_sequence(num_frames: u32,
 }
 
 fn main() {
-    render_sequence(10,
+    render_sequence(240,
+                    0,
                     500,
                     200,
-                    1.0,
-                    Complex::new(-0.5, -0.5),
+                    2.0,
+                    Complex::new(-0.761574, -0.0847596),
                     1.0 / 10.0,
                     "./out/".parse().unwrap(),
-    )
+    );
 }

@@ -219,6 +219,7 @@ dependencies = [
  "image",
  "indicatif",
  "num-complex",
+ "rayon",
 ]
 
 [[package]]
