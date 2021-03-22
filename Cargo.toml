@@ -1,0 +1,12 @@
+[package]
+name = "mandelbrot"
+version = "0.1.0"
+authors = ["Clemens-Dautermann <clemens.dautermann@t-online.de>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+image = "0.23.14"
+num-complex = "0.4.0"
+uuid = { version = "0.8", features = ["v4"] }
