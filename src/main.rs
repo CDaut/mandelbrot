@@ -1,13 +1,17 @@
+mod vulkan;
+
 extern crate image;
 extern crate num_complex;
+extern crate num_traits;
 
 use image::{RgbImage, ImageBuffer, Rgb};
 use std::fmt::Error;
 use num_complex::Complex;
 use indicatif::ProgressBar;
 use rayon::prelude::*;
+use num_traits::MulAddAssign;
 
-const THRESHHOLD: f64 = 200_i32.pow(2) as f64;
+const THRESHHOLD: f64 = 400.0;
 
 struct PixelInfo {
     x: u32,
@@ -20,10 +24,9 @@ fn calculate_color(number: Complex<f64>, iterations: u32) -> Result<Rgb<u8>, Err
     let mut cycle = Vec::with_capacity(iterations as usize);
 
     for i in 0..iterations {
-        z = z * z + number;
+        z.mul_add_assign(z, number);
 
         if cycle.contains(&z) { return Ok(Rgb::from([0, 0, 0])); }
-
         if z.norm_sqr() > THRESHHOLD {
             return Ok(map_num_to_color(i, iterations));
         }
@@ -135,6 +138,8 @@ fn render_sequence(end_frame: u32,
     let mut scale = initial_size * (1.0 - scale_factor).powi(start_frame as i32) as f64;
 
     for frame in start_frame..end_frame {
+        print!("\x1B[2J\x1B[1;1H");
+        println!("Rendering frame {}...", frame);
         let fractal: RgbImage = render_around_point(image_size,
                                                     iterations,
                                                     scale,
@@ -145,18 +150,25 @@ fn render_sequence(end_frame: u32,
 
         let filename: String = path.clone() + "frame_" + &*frame.to_string() + ".png";
         fractal.save(filename).unwrap();
-        println!("Rendered frame {}", frame);
     }
 }
 
 fn main() {
-    render_sequence(240,
+    /*
+    //special point:
+    let point = Complex::new(-0.743643887037158704752191506114774,
+                                     0.131825904205311970493132056385139);
+
+    render_sequence(1,
                     0,
-                    500,
-                    200,
-                    2.0,
-                    Complex::new(-0.761574, -0.0847596),
+                    512,
+                     1000,
+                    1.0,
+                    point,
                     1.0 / 10.0,
-                    "./out/".parse().unwrap(),
+                    "./test_".parse().unwrap(),
     );
+     */
+
+    vulkan::run();
 }
