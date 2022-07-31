@@ -12,3 +12,6 @@ num-complex = "0.4.0"
 # uuid = { version = "0.8", features = ["v4"] }
 indicatif = "0.15.0"
 rayon = "1.5.0"
+num-traits = "0.2"
+vulkano = "0.22.0"
+vulkano-shaders = "0.22.0"
